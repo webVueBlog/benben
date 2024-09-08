@@ -2,6 +2,35 @@
 
 一个基于 Spring Boot、MyBatis-Plus、MySQL、Redis、ElasticSearch、MongoDB、Docker、RabbitMQ 等技术栈实现的社区服务系统
 
+基于 React18、React-Router v6、React-Hooks、Redux、TypeScript、Vite3、Ant-Design 5.x、Hook Admin、ECharts 的一套社区服务系统
+
+采用最新技术找开发：React18、React-Router v6、React-Hooks、TypeScript、Vite3
+
+采用 Vite3 作为项目开发、打包工具（配置了 Gzip 打包、跨域代理、打包预览工具……）
+
+集成了 TypeScript，使用 redux 做状态管理，集成 immer、react-redux、redux-persist 开发
+
+使用 TypeScript 对 Axios 整个二次封装 （全局错误拦截、常用请求封装、全局请求 Loading、取消重复请求……）
+
+支持 Antd 组件大小切换、暗黑 && 灰色 && 色弱模式，使用 自定义高阶组件 进行路由权限拦截（403 页面）、页面按钮权限配置
+
+支持 React-Router v6 路由懒加载配置、菜单手风琴模式、无限级菜单、多标签页、面包屑导航
+
+使用 Prettier 统一格式化代码，集成 Eslint、Stylelint 代码校验规范（项目规范配置）
+
+使用 husky、lint-staged、commitlint、commitizen、cz-git 规范提交信息（项目规范配置）
+
+npm install -g cnpm -registry https://registry.npmmirror.com
+
+npm run dev
+
+![img_1.png](img_1.png)
+
+```
+# 生产环境
+npm run build:pro
+```
+
 ## 二、项目介绍
 
 ### 架构图
@@ -167,6 +196,64 @@ mvn clean install -DskipTests=true -Pprod
 |      git      | 2.34.1    | [http://github.com/](http://github.com/)                                                                               |
 |    docker     | 4.10.0+   | [https://docs.docker.com/desktop/](https://docs.docker.com/desktop/)                                                   |
 | let's encrypt | https证书   | [https://letsencrypt.org/](https://letsencrypt.org/)                                                                   |
+
+admin目录
+
+```
+benben-admin
+├─ .vscode                # vscode推荐配置
+├─ public                 # 静态资源文件（忽略打包）
+├─ src
+│  ├─ api                 # API 接口管理
+│  ├─ assets              # 静态资源文件
+│  ├─ components          # 全局组件
+│  ├─ config              # 全局配置项
+│  ├─ enums               # 项目枚举
+│  ├─ hooks               # 常用 Hooks
+│  ├─ language            # 语言国际化
+│  ├─ layouts             # 框架布局
+│  ├─ routers             # 路由管理
+│  ├─ redux               # redux store
+│  ├─ styles              # 全局样式
+│  ├─ typings             # 全局 ts 声明
+│  ├─ utils               # 工具库
+│  ├─ views               # 项目所有页面
+│  ├─ App.tsx             # 入口页面
+│  ├─ main.tsx            # 入口文件
+│  └─ env.d.ts            # vite 声明文件
+├─ .editorconfig          # 编辑器配置（格式化）
+├─ .env                   # vite 常用配置
+├─ .env.development       # 开发环境配置
+├─ .env.production        # 生产环境配置
+├─ .env.test              # 测试环境配置
+├─ .eslintignore          # 忽略 Eslint 校验
+├─ .eslintrc.js           # Eslint 校验配置
+├─ .gitignore             # git 提交忽略
+├─ .prettierignore        # 忽略 prettier 格式化
+├─ .prettierrc.js         # prettier 配置
+├─ .stylelintignore       # 忽略 stylelint 格式化
+├─ .stylelintrc.js        # stylelint 样式格式化配置
+├─ CHANGELOG.md           # 项目更新日志
+├─ commitlint.config.js   # git 提交规范配置
+├─ index.html             # 入口 html
+├─ LICENSE                # 开源协议文件
+├─ lint-staged.config     # lint-staged 配置文件
+├─ package-lock.json      # 依赖包包版本锁
+├─ package.json           # 依赖包管理
+├─ postcss.config.js      # postcss 配置
+├─ README.md              # README 介绍
+├─ tsconfig.json          # typescript 全局配置
+└─ vite.config.ts         # vite 配置
+```
+
+将 dist 目录上传到服务器的 /home/admin/ 目录下
+
+```
+location ^~ /admin {
+	alias /home/admin/dist/; # 根 目 录
+	index index.html;
+}
+```
 
 ### 搭建步骤
 
