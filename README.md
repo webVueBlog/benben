@@ -261,8 +261,516 @@ mysql同步es，支持es查询集成
 
 ### 搭建步骤
 
-#### 本地部署教程
+## 环境安装
+
+jdk安装
+
+```
+# ubuntu
+apt install openjdk-8-jdk
+
+# centos
+yum install openjdk-8-jdk
+```
+
+安装完毕之后，执行 java , javac命令进行验证
+
+maven安装
+
+```
+cd ~
+mkdir soft
+cd soft
+wget https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz
+tar -zxvf apache-maven-3.8.6-bin.tar.gz
+
+vim ~/.bashrc
+
+# 在最后添加环境变量
+export M2_HOME=/home/admin/soft/apache-maven-3.8.6
+PATH=M2HOME/bin:M2_HOME/bin:PATH
+
+# 配置生效
+source ~/.bashrc
+```
+
+配置完成之后执行命令 mvn --version 进行验证
+
+国内添加阿里的镜像源，加快下载速度
+
+```
+vim ~/soft/apache-maven-3.8.6/conf/settings.xml
+
+# 在<mirros>标签中，添加下面的镜像源
+
+    <mirror>
+      <id>alimaven</id>
+      <name>aliyun-maven</name>
+      <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+```
+
+nginx配置
+
+配置访问域名
+
+```
+cd /usr/local/nginx/conf/
+
+vim nginx.conf
+
+# 添加子域名解析，每个域名一个独立的配置文件
+# 在http的一级标签中，添加如下一行配置，表示在conf.d文件下的所有conf结尾的文件，都属于我们需要使用的nginx配置信息
+include /usr/local/nginx/conf/conf.d/*.conf;
+```
+
+添加论坛的域名解析规则
+
+```
+vim conf.d/ip.conf
 
 
-### 云服务器部署教程
+# 内容如下
+upstream  ip_host {
+    server 127.0.0.1:8080;
+}
+server {
+    server_name ip.hhui.top;
+
+    gzip on;
+    gzip_buffers 32 4K;
+    gzip_comp_level 6;
+    gzip_min_length 100;
+    gzip_types application/javascript text/css text/xml;
+    gzip_disable "MSIE [1-6]\."; #配置禁用gzip条件，支持正则。此处表示ie6及以下不启用gzip（因为ie低版本不支持）
+    gzip_vary on;
+
+    location ~* ^.+\.(ico|gif|jpg|jpeg|png){
+        access_log   off;
+        expires      1d;
+        proxy_pass         http://ip_host;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+
+    location ~* ^.+\.(css|js|txt|xml|swf|wav|pptx) {
+        access_log   off;
+        expires      1d;
+        proxy_pass         http://ip_host;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+
+    location ~* ^.+\.(css|js|txt|xml|swf|wav|pptx) {
+        access_log   off;
+        expires      10m;
+        proxy_pass         http://ip_host;
+        proxy_set_header   Host host;proxysetheaderX−Real−IPhost;
+        proxy_set_header   X-Real-IP remote_addr;
+        proxy_set_header   X-Forwarded-For  proxy_add_x_forwarded_for;
+    }
+
+    location / {
+        proxy_set_header X-real-ip  $remote_addr;
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_redirect default;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /usr/local/nginx/conf/conf.d/cert.pem;
+    ssl_certificate_key /usr/local/nginx/conf/conf.d/key.pem;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 1.1.1.1 valid=60s;
+    resolver_timeout 2s;
+}
+
+
+server {
+    if ($host = ip.hhui.top) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name ip.hhui.top;
+    return 404; # managed by Certbot
+}
+```
+
+证书使用let's encrypt生成
+
+## 数据库创建
+
+```
+# ubuntu
+sudo apt-get install mysql-server
+
+# centos
+yum install mysql mysql-server mysql-libs
+```
+### 查询登录密码
+```
+grep "temporary password" /var/log/mysqld.log
+
+## 输出如下
+# A temporary password is generated for root@localhost: xxxx
+```
+
+### 密码修改:
+
+使用set password
+
+格式：
+
+```
+mysql> set password for 用户名@localhost = password('新密码');
+```
+
+例子：
+
+```
+mysql> set password for root@localhost = password('123');
+```
+
+update 方式
+
+```
+mysql> use mysql;
+
+mysql> update user set password=password('123') where user='root' and host='localhost';
+
+mysql> flush privileges;
+```
+
+添加用户
+
+```
+alter user 'root'@'localhost' identified by 'test';
+create user 'test'@'%' IDENTIFIED BY 'test';
+```
+
+授予权限
+
+```
+# root 方式登录
+grant all PRIVILEGES on test.* to 'yihui'@'%' IDENTIFIED by 'test';
+flush privileges;
+```
+
+本项目在首次启动时，会自动创建数据库 + 表结构，无需额外操作；只是需要修改源码中的生产环境配置
+
+## 配置调整
+
+线上部署时，选择prod环境，因此需要设置对应的数据库相关配置信息
+
+resources-env/prod/application-dal.yml
+
+```
+spring:
+  datasource:
+    url: jdbc:mysql://xxx/ip?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: xxx
+    password: xxx
+```
+
+根据实际的情况进行修改
+
+## 启动脚本
+
+基于源码的部署脚本
+
+```
+#!/usr/bin/env bash
+
+WEB_PATH="benben-web"
+JAR_NAME="benben-web-0.0.1-SNAPSHOT.jar"
+
+# 部署
+function start() {
+    git pull
+
+    # 杀掉之前的进程
+    cat pid.log| xargs -I {} kill {}
+    mv ${JAR_NAME} ${JAR_NAME}.bak
+
+    mvn clean install -Dmaven.test.skip=True -Pprod
+    cd ${WEB_PATH}
+    mvn clean package spring-boot:repackage -Dmaven.test.skip=true -Pprod
+    cd -
+
+    mv ${WEB_PATH}/target/${JAR_NAME} ./
+    echo "启动脚本：==========="
+    echo "nohup java -server -Xms512m -Xmx512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &"
+    echo "==========="
+    nohup java -server -Xms512m -Xmx512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &
+    echo $! 1> pid.log
+}
+
+# 重启
+function restart() {
+    # 杀掉之前的进程
+    cat pid.log| xargs -I {} kill {}
+    # 重新启动
+    echo "启动脚本：==========="
+    echo "nohup java -server -Xms512m -Xmx512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &"
+    echo "==========="
+    nohup java -server -Xmn512m -Xmn512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &
+    echo $! 1> pid.log
+}
+
+if [proxy_add_x_forwarded_for;
+    }
+
+    location / {
+        proxy_set_header X-real-ip  $remote_addr;
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_redirect default;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /usr/local/nginx/conf/conf.d/cert.pem;
+    ssl_certificate_key /usr/local/nginx/conf/conf.d/key.pem;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 1.1.1.1 valid=60s;
+    resolver_timeout 2s;
+}
+
+
+server {
+    if ($host = ip.hhui.top) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name ip.hhui.top;
+    return 404; # managed by Certbot
+}
+```
+
+启动脚本
+
+基于源码的部署脚本
+
+```
+#!/usr/bin/env bash
+
+WEB_PATH="ip-web"
+JAR_NAME="ip-web-0.0.1-SNAPSHOT.jar"
+
+# 部署
+function start() {
+    git pull
+
+    # 杀掉之前的进程
+    cat pid.log| xargs -I {} kill {}
+    mv ${JAR_NAME} ${JAR_NAME}.bak
+
+    mvn clean install -Dmaven.test.skip=True -Pprod
+    cd ${WEB_PATH}
+    mvn clean package spring-boot:repackage -Dmaven.test.skip=true -Pprod
+    cd -
+
+    mv ${WEB_PATH}/target/${JAR_NAME} ./
+    echo "启动脚本：==========="
+    echo "nohup java -server -Xms512m -Xmx512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &"
+    echo "==========="
+    nohup java -server -Xms512m -Xmx512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &
+    echo $! 1> pid.log
+}
+
+# 重启
+function restart() {
+    # 杀掉之前的进程
+    cat pid.log| xargs -I {} kill {}
+    # 重新启动
+    echo "启动脚本：==========="
+    echo "nohup java -server -Xms512m -Xmx512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &"
+    echo "==========="
+    nohup java -server -Xmn512m -Xmn512m -Xmn512m -XX:NativeMemoryTracking=detail -XX:-OmitStackTraceInFastThrow -jar ${JAR_NAME} > /dev/null 2>&1 &
+    echo $! 1> pid.log
+}
+
+if [ # == 0 ]; then
+  echo "miss command: start | restart"
+elif [ 1==′start′];thenstartelif[1 == 'start' ]; then
+  start
+elif [ 1 == 'restart' ];then
+  restart
+else
+  echo 'illegal command, support cmd: start | restart'
+fi
+```
+
+启动命令
+
+```
+# 进入项目根目录，执行命令
+# chmod +x launch.sh # 若脚本没有执行权限，则取消这行命令的注释，用于添加执行权限
+./launch.sh start
+```
+
+## 源码方式构建
+
+线上部署时，选择prod环境，因此需要设置对应的数据库相关配置信息
+
+vim 进入 resources-env/prod/application-dal.yml
+
+```
+spring:
+  datasource:
+    url: jdbc:mysql://xxx/ip?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: xxx
+    password: xxx
+```
+
+根据实际的情况进行修改ip, 用户名密码
+
+接下来就是编译启动
+
+```
+cd benben
+./launch.sh start
+```
+
+提示：
+
+* 若launch.sh脚本没有执行权限，可以通过命令行 chmod +x launch.sh 添加
+* 启动之后，可以发现当前目录下新增一个 pid.log 文件，里面记录的是启动的服务进程号
+* 业务日志在当前目录的 logs下
+* 请求日志: logs/req-prod.log
+* 业务日志: logs/ip-prod.log
+
+1.2. 应用重启
+
+若只是单纯的希望应用重启一下
+
+```
+cd /home/admin/workspace/benben
+
+./launch.sh restart
+```
+
+1.3. 应用发布
+
+当有新的改动时，若希望重新发布应用，执行下面的命令
+
+```
+cd /home/admin/workspace/benben
+
+./launch.sh start
+```
+
+2. jar包上传
+
+3. 首先确保服务器配置已准备完毕
+
+接下来确保本地生产环境的数据库等相关配置已更新为正确的配置
+
+然后就是再项目根目录下执行
+
+```
+# 打包jar，并上传到服务器，关闭旧的应用，重新启动新的应用
+./deploy.sh prod
+```
+
+# 编程规范约定
+
+## 1. Controller层
+
+### 1.0 接口层逻辑说明
+
+对于Controller接口层，通常需要做的事情为：
+
+- 传参校验
+- service服务类调用，获取各类数据
+- 返回结果封装(如异常返回，重定向，写cookie，组装返回的VO对象等)
+
+### 1.1 接口层区分两类：返回数据 + 返回视图
+
+建议：不要将两类接口放在同一个Controller文件中，分开存放
+
+- RestController:
+  - 返回json/xml/string格式数据，
+  - 放在 rest 包路径下，
+  - path路径建议为 `业务/api/xxx`
+- ViewController:
+  - 返回视图
+  - 放在view包路径下
+  - path路径为 `业务/view/xxx` 或者 `业务/xxx`
+
+### 1.2 接口拆分，版本管理等
+
+当所有的内容放在一个Controller，会导致接口类的膨胀，因此做好接口的拆分治理非常重要；
+
+推荐的拆分原则：
+
+- 按业务拆分：不同的业务，有自己独立的Controller
+- 按读写拆分：读和写拆分两个Controller
+- 版本拆分：当一个接口有多个版本管理时（常见于给app提供接口的场景），也可以对于版本管理的接口，按照版本进行分包拆分
+
+## 3.DAO
+
+### 3.1 查询方法签名约定
+
+数据库相关查询方法命名(尽量遵循jpa的策略)
+
+- getXxx: 通常表示查询单条记录
+- listXxx: 通常是查询多条记录
+- selectXxxByXxx: 类JPA用法，表示根据什么条件查询什么信息，要求签名与实际sql一致
+  - 如：selectUserNameByUserId: 根据userId查询userName
+  - selectByUserIdIn: 查询userId在给定集合中的数据
+
+更新数据
+- updateXxx
+
+删除数据
+- removeXxx
+
+与之对应的Service相关方法签名
+
+- queryXxx, findXxx
+- 尽量不要使用getXxx, selectXxx
+
+1. 环境准备
+
+2. 首先准备好基础的开发环境，如
+
+jdk/jre: 请安装jdk8+以上版本
+
+maven: 本项目基于maven作为项目管理工具，因此在启动之前请配置好maven相关环境
+
+MySql数据库
+版本支持：8.x+
+
+说明：数据库可以使用本机的数据库，也可以使用非本机的（请注意本机能正常访问）
+
+git版本管理
+
+开发工具：建议idea，当然eclipse/vs也没有问题
+
+![img_2.png](img_2.png)
+
+数据库名配置: ip-web/src/main/resources/application.yml
+
+```
+# 默认的数据库名
+database:
+name: benben
+```
+
+本项目提供了自动创建库表的功能，在项目启动之后，当库不存在时，会创建库；当表不存在时，会自动创建表，且会初始化一些测试数据
+
+因此不建议用户自己通过上面的sql进行创建表
+
+* dev: 本地开发环境
+* test: 测试环境
+* pre: 预发环境
+* prod: 生产环境
+
 
