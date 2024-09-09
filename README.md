@@ -773,4 +773,33 @@ name: benben
 * pre: 预发环境
 * prod: 生产环境
 
+默认的环境选择是dev，可以通过下面两种方式进行环境切换
+
+case1: 命令切换
+
+```
+# 切换到test环境
+mvn clean package -DskipTests=true -Ptest
+```
+
+case2: idea切换
+
+以默认的dev环境配置为例，首先进入配置文件 application-dal.yml
+
+```
+spring:
+datasource:
+# 数据库名，从配置 database.name 中获取
+url: jdbc:mysql://127.0.0.1:3306/${database.name}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+username: root
+password:
+```
+上面的数据库中，通常来讲需要修改的有三个
+
+url: 主要修改的就是这个数据库的域名 + 端口号，即将127.0.0.1:3306替换为您实际使用的数据库地址
+username: 数据库名
+password: 数据库密码
+
+
+
 
