@@ -800,6 +800,182 @@ url: 主要修改的就是这个数据库的域名 + 端口号，即将127.0.0.1
 username: 数据库名
 password: 数据库密码
 
+1. 基本功能盘点，演示
+2. 架构 + 知识体系
+
+## 设计篇
+> 这一节将主要介绍一个成熟的团队，一个新的项目在立项之前，会做哪些事情
+
+1. 产品设计
+2. 技术调研
+3. 方案设计
+  1. 架构设计
+  2. 库表设计
+  3. 技术选型
+4. 项目管理，产品功能按版本拆分，任务拆分，排期，周期进度同步
+
+## 技术实现
+
+0. 代码规范、编码风格、Git工作流程、约定等信息同步
+1. 项目工程搭建
+2. 结构分层（MVC）
+3. DAO层实现
+  1. SpringBoot集成Mybatis-Plus
+  2. 配合现有的代码实现，介绍Mybatis-Plus的CURD使用姿势，以此讲解db操作相关知识点
+  3. db相关知识点:
+  - 单表curd使用姿势
+  - 复杂姿势：连表查询 + 聚合 + 分组 + 类型转换（如数据库中的Data如何映射Java中long）
+  - 事务（声明事务、编程事务） + 分布式事务
+  - 其他知识点：如输出sql执行日志 + 数据脱敏 + 悲观锁/乐观锁等 + 分库分表 + 全局唯一递增id方案
+4. Service层实现
+  1. service主要做具体的业务逻辑，大量引入的技术都在这一层进行应用得体现，所以service的相关内容，可以结合知识点来进行展开
+  2. 缓存操作姿势
+    1. 本地缓存 Guava + Caffeine
+    2. redis缓存
+    3. Spring 的 Cacheable注解使用姿势 （基于此可以科普介绍AOP）
+  3. ES搜索相关
+  4. Redis计数器相关
+  5. MongoDB相关
+  6. 消息通知
+    1. 进程内的Spring的事件机制 SpringEvent/Listener
+    2. 进程间的MQ姿势
+  7. 定时任务
+    1. 进程内的Spring的Schedule
+    2. 进程间的xxl-job,Elastic-Job,Quartz Cluster
+    3. 自研实现：如系统消息，通知百万用户，如何实现
+  8. 分布式锁
+5. Web层
+  1. Controller基本知识点
+    1. 传参 + 返回
+    2. RestTemplate 网络请求相关
+  2. 用户登录权限管理
+    1. 自定义基于AOP实现权限管理
+    2. SpringSecurity实现权限管理
+    3. session/cookie身份校验, JWT、Token等机制
+    4. 分布式会话
+  3. 全局异常处理
+  4. 日志相关
+  5. Thymeleaf渲染引擎
+    1. 基本语法
+    2. SpEL使用姿势
+  6. 文件上传下载
+  7. 跨域
+6. 通用
+  1. 多环境管理(dev, test, pre, pro)
+  2. 配置相关
+    1. 本地配置，如何取，动态刷新
+    2. 集成Apollo，Nacos，SpringCloudConfig，Zookeeper
+  3. 大厂应用日志规范
+  4. 应用状态信息监控
+    1. SpringBootAdmin
+    2. prometheus
+  5. Swagger接口文档管理
+  6. 邮件通知
+  7. 序列化
+
+## 亮点
+
+1. SpringSecurity实现的权限管理
+2. 第三方授权登录，扫码登录原理，OAuth相关知识点，分布式session，单点登录，JWT等
+3. MyBatis/MybatisPlus 系统的教程
+4. 参数校验Validate
+5. 定时任务的各种方案
+6. 网站统计功能(pv, uv)，排行榜，计数
+7. 缓存相关
+8. 分布式锁的实现方式，使用姿势
+9. 消息队列，各种MQ的集成介绍
+10. 搜索的知识点ES/Solr
+11. ELK搭建日志
+12. Prometheus + Grafana搭建应用监控体系
+13. AOP/Filter两种实现请求日志打印的方式
+14. 全链路监控方案
+15. 明文密码改造
+
+## 实战技能
+
+1. jdk8流式用法
+2. 使用工具包，提高工作效率
+    1. 如idea的各种插件
+    2. gauva， hutool，apache 等工具包
+    3. 打造自己的工具集
+3. 如何写出更好看的代码
+4. 池化技术，并发管理
+5. 如何在项目中使用合适的设计模式
+
+## 部署
+
+1. 不同环境的部署上线教程
+2. jar包部署姿势、war包部署姿势
+3. docker部署姿势
+4. jenkins自动化部署
+
+## 技术
+
+* 构建工具：后端（Maven、Gradle）、前端（Webpack、Vite）
+* 单元测试：Junit
+* 开发框架：SpringMVC、Spring、Spring Boot
+* Web 服务器：Tomcat、Caddy、Nginx
+* 微服务：Spring Cloud
+* 数据层：JPA、MyBatis、MyBatis-Plus
+* 模板引擎：thymeleaf
+* 容器：Docker（镜像仓库服务Harbor、图形化工具Portainer）、k8s、Podman
+* 分布式 RPC 框架：Dubbo
+* 消息队列：Kafka（图形化工具Eagle）、RocketMQ、RabbitMQ、Pulsar
+* 持续集成：Jenkins、Drone
+* 压力测试：Jmeter
+* 数据库：MySQL（数据库中间件Gaea、同步数据canal、数据库迁移工具Flyway）
+* 缓存：Redis（增强模块RedisMod、ORM框架RedisOM）
+* nosql：MongoDB
+* 对象存储服务：minio
+* 日志：Log4j、Logback、SF4J、Log4j2
+* 搜索引擎：ES
+* 日志收集：ELK（日志采集器Filebeat）、EFK（Fluentd）、LPG（Loki+Promtail+Grafana）
+* 大数据：Spark、Hadoop、HBase、Hive、Storm、Flink
+* 分布式应用程序协调：Zookeeper
+* token 管理：jwt（nimbus-jose-jwt）
+* 诊断工具：arthas
+* 安全框架：Shiro、SpringSecurity
+* 权限框架：Keycloak、Sa-Token
+* JSON 处理：fastjson2、Jackson、Gson
+* office 文档操作：EasyPoi、EasyExcel
+* 文件预览：kkFileView
+* 属性映射：mapStruct
+* Java硬件信息库：oshi
+* Java 连接 SSH 服务器：ganymed
+* 接口文档：Swagger-ui、Knife4j、Spring Doc、Torna、YApi
+* 任务调度框架：Spring Task、Quartz、PowerJob、XXL-Job
+* Git服务：Gogs
+* 低代码：LowCodeEngine、Yao、Erupt、magic-api
+* API 网关：Gateway、Zuul、apisix
+* 数据可视化（Business Intelligence，也就是 BI）：DataEase、Metabase
+* 项目文档：Hexo、VuePress
+* 应用监控：SpringBoot Admin、Grafana、SkyWalking、Elastic APM
+* 注解：lombok
+* jdbc连接池：Druid
+* Java 工具包：hutool、Guava
+* 数据检查：hibernate validator
+* 代码生成器：Mybatis generator
+* Web 自动化测试：selenium
+* HTTP客户端工具：Retrofit
+* 脚手架：sa-plus
+
+![img_3.png](img_3.png)
+
+## 进度排期
+
+![img_4.png](img_4.png)
+
+## bug&优化
+
+![img_5.png](img_5.png)
+
+![img_6.png](img_6.png)
+
+![img_7.png](img_7.png)
+
+![img_8.png](img_8.png)
+
+
 
 
 
